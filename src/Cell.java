@@ -41,3 +41,27 @@ public interface Cell {
      */
     public void setOrder(int t);
 }
+
+               if (cellValue.charAt(i) == '(') //check that no way of )( or just).
+                   par++;
+               if (cellValue.charAt(i) == ')')
+                   par--;
+               if (par < 0)
+                   return false;
+
+       }
+       if (par!=0)//check that no way of just (.
+           return false;
+           return true;
+       }
+       public  Double computeForm(String cellValue) {
+              if (!isForm(cellValue))
+                  return
+           } // “=1+2*2” → 5,
+           // “=((1+2)*2)-1”→ 5
+
+       }
+
+
+
+}
