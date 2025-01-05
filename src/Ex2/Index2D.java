@@ -1,4 +1,4 @@
-package assignments.ex2;
+package Ex2;
 
 /**
  * ArielU. Intro2CS, Ex2: https://docs.google.com/document/d/1-18T-dj00apE4k1qmpXGOaqttxLn-Kwi/edit?usp=sharing&ouid=113711744349547563645&rtpof=true&sd=true
@@ -17,7 +17,9 @@ public interface Index2D {
      * checks of the string representation of this index is valid "XY" as X is a letter "A-Z" (or "a-z"), and Y is an integer [0-99].
      * @return true iff this is a valid 2D index.
      */
-    public boolean isValid();
+    public boolean isValid(int x, int y);
+
+   
 
     /**
      *

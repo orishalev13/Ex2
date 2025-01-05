@@ -1,9 +1,12 @@
-package assignments.ex2;
+package Ex2;
 // Add your documentation below:
 
 public class SCell implements Cell {
     private String line;
     private int type;
+    private int order;
+    private boolean valid;
+    private String Data;
     // Add your code here
 
     public SCell(String s) {
@@ -13,6 +16,7 @@ public class SCell implements Cell {
 
     @Override
     public int getOrder() {
+        return order;
         // Add your code here
 
         return 0;
@@ -51,4 +55,5 @@ public void setData(String s) {
         // Add your code here
 
     }
+
 }

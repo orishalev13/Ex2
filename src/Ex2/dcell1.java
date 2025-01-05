@@ -1,6 +1,10 @@
-public class Cell {
+package Ex2;
+
+import java.util.Stack;
+
+public class dcell1 {
     public String cellValue  ;
-    public Cell(String cellValue){
+    public dcell1(String cellValue){
         this.cellValue=cellValue;
     }
     public String GetcellValue() {
@@ -9,7 +13,8 @@ public class Cell {
     public void SetcellValue(String cellValue) {
         this.cellValue = cellValue;
     }
-    public boolean isNumber(String cellValue) {
+
+    public static boolean isNumber(String cellValue) {
         cellValue = cellValue.replaceAll(" ", "");
         if (cellValue == null || cellValue.isEmpty()) {
             return false; // Return false for null or empty strings
@@ -36,7 +41,7 @@ public class Cell {
 
 
     }
-    private boolean isForm(String cellValue) {
+    static boolean isForm(String cellValue) {
         cellValue = cellValue.replaceAll(" ", "");
         if (cellValue == null || cellValue.isEmpty()) {
             return false; // Return false for null or empty strings
@@ -105,8 +110,57 @@ public class Cell {
         if (!isForm(cellValue))
             return (double) -1;
         return 1.0;
-    } // “=1+2*2” → 5,
-    // “=((1+2)*2)-1”→ 5
 
+    }// “=1+2*2” → 5,// “=((1+2)*2)-1”→ 5
+       public int indoflast() {
+     int i=0;
+    return i;
+
+    }
+    private boolean isOperator(char c) {
+        return c == '+' || c == '-' || c == '*' || c == '/';
+    }
+    private static int precedence(char operator) {
+        return switch (operator) {
+            case '+', '-' -> 1;
+            case '*', '/' -> 2;
+            default -> 0;
+        };
+    }
+  private static double applyOperator(double a, double b, char operator) throws Exception {
+        return switch (operator) {
+            case '+' -> a + b;
+            case '-' -> a - b;
+            case '*' -> a * b;
+            case '/' -> a / b;
+            default -> throw new Exception("the operatror incorrect");
+        };}
+
+    double evaluateExpression(String postfix) throws Exception {
+        Stack<Double> stack = new Stack<>();
+        String[] tokens = postfix.split(" "); // מפצל את הביטוי לפורמט postfix
+
+        for (String token : tokens) {
+            if (isNumber(token)) {
+                // אם זה מספר, דוחף אותו למחסנית
+                stack.push(Double.parseDouble(token));
+            } else if (isOperator(token.charAt(0))) {
+                // אם זה אופרטור, מבצע חישוב עם שני המספרים האחרונים במחסנית
+                if (stack.size() < 2) {
+                    throw new Exception("ביטוי לא תקין");
+                }
+                double b = stack.pop();
+                double a = stack.pop();
+                stack.push(applyOperator(a, b, token.charAt(0)));
+            }
+        }
+
+
+        // בסיום, אמור להישאר מספר יחיד במחסנית - התוצאה
+        if (stack.size() != 1) {
+            throw new Exception("ביטוי לא תקין");
+        }
+
+        return stack.pop();
+    }
 }
-

@@ -1,12 +1,15 @@
-package assignments.ex2;
+package Ex2;
+
 import java.io.IOException;
 // Add your documentation below:
 
 public class Ex2Sheet implements Sheet {
     private Cell[][] table;
+    private int[][] depth;
+    private int x;
+    private int y;
     // Add your code here
 
-    // ///////////////////
     public Ex2Sheet(int x, int y) {
         table = new SCell[x][y];
         for(int i=0;i<x;i=i+1) {

@@ -1,4 +1,4 @@
-package assignments.ex2;
+package Ex2;
 
 import java.awt.*;
 import java.io.IOException;
