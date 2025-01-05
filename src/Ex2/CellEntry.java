@@ -7,7 +7,7 @@ private int x;
 private int y;
     @Override
     public boolean isValid(int x, int y) {
-
+         this.x
         return false;
     }
 
