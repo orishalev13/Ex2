@@ -6,11 +6,15 @@ import java.io.IOException;
 public class Ex2Sheet implements Sheet {
     private Cell[][] table;
     private int[][] depth;
-    private int x;
-    private int y;
+    private final int width;
+    private final int height;
+    private final Map<String, Cell> cells;
     // Add your code here
 
-    public Ex2Sheet(int x, int y) {
+    public Ex2Sheet(int x, int y, int width, int height, Map<String, Cell> cells) {
+        this.width = width;
+        this.height = height;
+        this.cells = cells;
         table = new SCell[x][y];
         for(int i=0;i<x;i=i+1) {
             for(int j=0;j<y;j=j+1) {
@@ -19,8 +23,8 @@ public class Ex2Sheet implements Sheet {
         }
         eval();
     }
-    public Ex2Sheet() {
-        this(Ex2Utils.WIDTH, Ex2Utils.HEIGHT);
+    public Ex2Sheet(int width, int height, Map<String, Cell> cells) {
+        this(Ex2Utils.WIDTH, Ex2Utils.HEIGHT, cells, height, width);
     }
 
     @Override
