@@ -1,23 +1,28 @@
 package Ex2;
 // Add your documentation below:
 
+import java.util.List;
+
 public class SCell implements Cell {
 
     private String data;
     private int type;
     private int order;
-
+    private List<Cell> scell;
     // Add your code here
-    public SCell(String data, int type, int order) {
+    public SCell(String data, int type, int order,List<Cell> scell) {
 
         this.data = data;
         this.type = type;
         this.order = order;
+        this.scell =scell;
     }
 
     public SCell() {
         this("", 0, 0);
     }
+
+
 
     @Override
     public String getData() {
@@ -41,14 +46,29 @@ public class SCell implements Cell {
 
     @Override
     public int getOrder() {
-        return order;
+        // If the cell is a formula, compute the order based on its dependencies.
+        if (type == Ex2Utils.FORM) {
+            int maxOrder = 0;
+            for (Cell dep : scell) {
+                maxOrder = Math.max(maxOrder, dep.getOrder());
+            }
+            return maxOrder + 1; // 1 + max of all dependent cells
+        }
+        return 0; // If not a formula, no computation needed
     }
-
     @Override
     public void setOrder(int t) {
         this.order = t;
     }
+    // Add a dependency for this cell (used for formulas)
+    public void addDependency(Cell dep) {
+        scell.add(dep);
+    }
 
+    // Clear the dependencies (used for recalculation or resetting)
+    public void clearDependencies() {
+        scell.clear();
+    }
     @Override
     public String toString() {
         return "CellImpl{" +
@@ -57,54 +77,6 @@ public class SCell implements Cell {
                 ", order=" + order +
                 '}';
     }
-
-   /* public SCell(String s) {
-        // Add your code here
-        setData(s);
-    }
-
-    @Override
-    public int getOrder() {
-        return order;
-        // Add your code here
-
-        return 0;
-        // ///////////////////
-    }
-
-    //@Override
-    @Override
-    public String toString() {
-        return getData();
-    }
-
-    @Override
-public void setData(String s) {
-        // Add your code here
-        line = s;
-        /////////////////////
-    }
-    @Override
-    public String getData() {
-        return line;
-    }
-
-    @Override
-    public int getType() {
-        return type;
-    }
-
-    @Override
-    public void setType(int t) {
-        type = t;
-    }
-
-    @Override
-    public void setOrder(int t) {
-        this.order = t;
-        // Add your code here*/
-
-
     public static boolean isNumber(String cellValue) {
         cellValue = cellValue.replaceAll(" ", "");
         if (cellValue == null || cellValue.isEmpty()) {
