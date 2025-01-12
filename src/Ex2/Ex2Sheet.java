@@ -4,16 +4,11 @@ import java.io.IOException;
 // Add your documentation below:
 
 public class Ex2Sheet implements Sheet {
-    //private Cell[][] table;
-    //private int[][] depth;
-   // private final int width;
-    //private final int height;
-    //private final Map<String, Cell> cells;
-    // Add your code here
+
     private SCell[][] cells;
 
-    public Ex2Sheet(int width, int height) {
-        cells = new SCell[width][height];
+    public Ex2Sheet(CellEntry entry) {
+        cells = new SCell[entry.getX()][entry.getY()];
     }
 
     @Override
@@ -45,8 +40,8 @@ public class Ex2Sheet implements Sheet {
 
     @Override
     public Cell get(String entry) {
-        int x = Ex2Utils..getColumn(entry);
-        int y = Ex2Utils.getRow(entry);
+        int x = CellEntry.getColumn(entry);
+        int y = CellEntry.getRow(entry);
         return get(x, y);
     }
 
@@ -57,7 +52,7 @@ public class Ex2Sheet implements Sheet {
     }
 
     @Override
-    public String eval(int x, int y) {
+    public String eval(int x, int y) throws Exception {
         SCell cell = (SCell) get(x, y);
         if (cell == null) return "";
 
@@ -69,7 +64,7 @@ public class Ex2Sheet implements Sheet {
         } else if (type == Ex2Utils.TEXT) {
             return data;
         } else if (type == Ex2Utils.FORM) {
-            Double result = Ex2Utils.evaluateFormula(data, this);
+            Double result = SCell.computeForm(data);
             return result != null ? result.toString() : "ERR_FORM";
         } else {
             return "ERR_FORM";
@@ -77,7 +72,7 @@ public class Ex2Sheet implements Sheet {
     }
 
     @Override
-    public void eval() {
+    public void eval() throws Exception {
         for (int x = 0; x < width(); x++) {
             for (int y = 0; y < height(); y++) {
                 eval(x, y);

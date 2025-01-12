@@ -2,8 +2,9 @@ package Ex2;
 
 import org.junit.jupiter.api.Test;
 
-import static dcell1.isForm;
-import static dcell1.isNumber;
+import static Ex2.SCell.isForm;
+import static Ex2.SCell.isNumber;
+import static Ex2.SCell.computeForm;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 public class EX2test {
@@ -25,10 +26,10 @@ public class EX2test {
     void testIsNumber() {
         dcell1 cell = new dcell1("");
 
-        assertTrue(isNumber("123"));
-        assertTrue(isNumber("-123.45"));
-        assertFalse(isNumber("abc"));
-        assertFalse(isNumber(""));
+        assertTrue(SCell.isNumber("123"));
+        assertTrue(SCell.isNumber("-123.45"));
+        assertFalse(SCell.isNumber("abc"));
+        assertFalse(SCell.isNumber(""));
     }
 
     @Test
@@ -46,24 +47,39 @@ public class EX2test {
     void testIsForm() {
         dcell1 cell = new dcell1("");
 
-        assertTrue(isForm("=1+2"));
-        assertTrue(isForm("=((1+2)*2)"));
-        assertFalse(isForm("1+2"));
-        assertFalse(isForm("Hello"));
-        assertFalse(isForm(""));
+        assertTrue(SCell.isForm("=1+2"));
+        assertTrue(SCell.isForm("=((1+2)*2)"));
+        assertFalse(SCell.isForm("1+2"));
+        assertFalse(SCell.isForm("Hello"));
+        assertFalse(SCell.isForm(""));
     }
 
     @Test
     void testComputeForm() {
         dcell1 cell = new dcell1("");
 
-        Double result1 = dcell1.computeForm("=1+2");
+        Double result1 = null;
+        try {
+            result1 = SCell.computeForm("=1+2");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         assertEquals(1.0, result1); // מקום להחליף לערך המצופה
 
-        Double result2 = cell.computeForm("=((1+2)*2)");
+        Double result2 = null;
+        try {
+            result2 = SCell.computeForm("=((1+2)*2)");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         assertEquals(1.0, result2); // מקום להחליף לערך המצופה
 
-        Double result3 = cell.computeForm("123");
+        Double result3 = null;
+        try {
+            result3 = SCell.computeForm("123");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         assertEquals(-1.0, result3);
     }
 

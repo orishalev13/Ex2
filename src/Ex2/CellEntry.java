@@ -5,12 +5,12 @@ public class CellEntry  implements Index2D {
     private final int x;
     private final int y;
 
-    public CellEntry(int x, int y) {
+    public CellEntry(String entry) {
           if (isValid()) {
-              throw new IllegalArgumentException("Invalid index values: x must be >= 0, y must be between 0 and 99.");
+              throw new IllegalArgumentException("Invalid index values: x must be  between 0 and 25, y must be between 0 and 99.");
           }
-        this.x = x;
-        this.y = y;
+        this.x = getColumn(entry);
+        this.y = getRow(entry);
     }
 
     @Override
@@ -28,7 +28,7 @@ public class CellEntry  implements Index2D {
     public int getY() {
             return y;
     }
-    public static CellEntry fromString(String indexStr) {
+  /*  public static CellEntry fromString(String indexStr) {
         if (indexStr == null || indexStr.length() < 3|| indexStr.charAt(0)!='=') {
             throw new IllegalArgumentException("Invalid index format.");
         }
@@ -51,6 +51,24 @@ public class CellEntry  implements Index2D {
          catch (NumberFormatException e) {
             throw new IllegalArgumentException("Invalid number format in index.", e);
         }
+    }/**/
+    public static int getColumn(String entry) {
+        int column = 0;
+        for (int i = 0; i < entry.length(); i++) {
+            char c = entry.charAt(i);
+            if (Character.isDigit(c)) break;
+            column = column * 26 + (c - 'A' + 1);
+        }
+        return column - 1; // Convert to 0-based index
     }
+
+    public static int getRow(String entry) {
+        int index = 0;
+        while (index < entry.length() && !Character.isDigit(entry.charAt(index))) {
+            index++;
+        }
+        return Integer.parseInt(entry.substring(index)) - 1; // Convert to 0-based index
+    }
+
 
 }

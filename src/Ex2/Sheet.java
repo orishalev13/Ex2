@@ -71,12 +71,12 @@ public interface Sheet {
      * @param y integer, y-coordinate of the cell.
      * @return the string that will be presented in the x,y cell
      */
-    public String eval(int x, int y);
+    public String eval(int x, int y) throws Exception;
 
     /**
      * Evaluates (computes) all the values of all the cells in this spreadsheet.
      */
-    public void eval();
+    public void eval() throws Exception;
     /**
      *  Computes a 2D array of the same dimension as this SpreadSheet, each entry holds its dependency depth.
      *  if a cell is not dependent on any other cell its depth is 0.

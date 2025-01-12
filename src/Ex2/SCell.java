@@ -1,25 +1,32 @@
 package Ex2;
 // Add your documentation below:
 
+import java.util.ArrayList;
 import java.util.List;
 
-public class SCell implements Cell {
+public abstract class SCell implements Cell {
 
     private String data;
     private int type;
-    private int order;
-    private List<Cell> scell;
+   private int order;
+
     // Add your code here
-    public SCell(String data, int type, int order,List<Cell> scell) {
+    public SCell(String data) {
 
         this.data = data;
-        this.type = type;
-        this.order = order;
-        this.scell =scell;
+
+        if(isNumber(data))
+            this.type=1;
+        if (isText(data))
+            this.type=2;
+        if (isForm1(data))
+        this.type = 3;
+        this.order = SCell.getOrder;
+        //this.scell=new ArrayList<>();
     }
 
     public SCell() {
-        this("", 0, 0);
+        this("");
     }
 
 
@@ -69,12 +76,11 @@ public class SCell implements Cell {
     public void clearDependencies() {
         scell.clear();
     }
-    @Override
     public String toString() {
         return "CellImpl{" +
                 "data='" + data + '\'' +
-                ", type=" + type +
-                ", order=" + order +
+               // ", type=" + type +
+                //", order=" + order +
                 '}';
     }
     public static boolean isNumber(String cellValue) {
@@ -174,7 +180,7 @@ public class SCell implements Cell {
         return true;
     }
 
-    public Double computeForm(String cellValue) throws Exception {
+    public static Double computeForm(String cellValue) throws Exception {
         if (cellValue == null || cellValue.isEmpty())
             throw new Exception("the formula incorrect");
         cellValue = cellValue.replaceAll(" ", "");
@@ -287,4 +293,4 @@ public class SCell implements Cell {
             return i == str.length();
         }
     }
-}
+
