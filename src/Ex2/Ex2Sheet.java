@@ -7,13 +7,15 @@ import java.util.List;
 import java.util.Set;
 
 public class Ex2Sheet implements Sheet {
-    private SCell[][] cells;
+    private SCell[][] cells; // 2D array to store cells in the spreadsheet
 
+    // Constructor to initialize the spreadsheet with a given width and height
     public Ex2Sheet(int width, int height) {
         if (width <= 0 || height <= 0) {
             throw new IllegalArgumentException("the width and the height >=0");
         }
         cells = new SCell[width][height];
+        // Initialize each cell with an empty SCell object
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
                 cells[x][y] = new SCell("");
@@ -21,34 +23,38 @@ public class Ex2Sheet implements Sheet {
         }
     }
 
+    // Check if the given coordinates are within the bounds of the spreadsheet
     @Override
     public boolean isIn(int x, int y) {
         return x >= 0 && x < width() && y >= 0 && y < height();
     }
 
+    // Get the width of the spreadsheet
     @Override
     public int width() {
         return cells.length;
     }
 
+    // Get the height of the spreadsheet
     @Override
     public int height() {
         return cells[0].length;
     }
 
+    // Set the value of a cell at the given coordinates
     @Override
     public void set(int x, int y, String c) {
         if (!isIn(x, y)) {
             throw new IllegalArgumentException("Invalid cell coordinates: (" + x + ", " + y + ")");
         }
 
-        // Store the original formula/value
+        // Store the original formula/value of the cell
         String oldValue = cells[x][y].getData();
         cells[x][y] = new SCell(c);
 
-        // If the value actually changed, we need to re-evaluate all cells
+        // If the value has changed, re-evaluate dependent cells
         if (oldValue == null || !oldValue.equals(c)) {
-            // First evaluate this cell if it's a formula
+            // If the new value is a formula, evaluate it
             if (c != null && c.startsWith("=")) {
                 try {
                     eval(x, y);
@@ -57,7 +63,7 @@ public class Ex2Sheet implements Sheet {
                 }
             }
 
-            // Then re-evaluate all other cells that might depend on this one
+            // Re-evaluate all cells that might depend on this cell
             for (int i = 0; i < width(); i++) {
                 for (int j = 0; j < height(); j++) {
                     // Skip the current cell
@@ -66,11 +72,11 @@ public class Ex2Sheet implements Sheet {
                     SCell cell = cells[i][j];
                     if (cell != null && cell.getData() != null && cell.getData().startsWith("=")) {
                         String cellData = cell.getData();
-                        // If this cell references our changed cell
+                        // Check if this cell references the changed cell
                         String changedCellRef = String.format("%c%d", (char) ('A' + x), y);
                         if (cellData.toUpperCase().contains(changedCellRef)) {
                             try {
-                                // Clear evaluation stack before each evaluation
+                                // Clear evaluation stack before re-evaluating
                                 evaluationStack.clear();
                                 // Re-evaluate the dependent cell
                                 String result = eval(i, j);
@@ -84,12 +90,13 @@ public class Ex2Sheet implements Sheet {
         }
     }
 
+    // Re-evaluate all cells that contain formulas
     private void reEvaluateDependentCells() {
         for (int i = 0; i < width(); i++) {
             for (int j = 0; j < height(); j++) {
                 SCell cell = cells[i][j];
                 if (cell != null && cell.getData() != null && cell.getData().startsWith("=")) {
-                    // Clear evaluation stack before each cell evaluation
+                    // Clear evaluation stack before each evaluation
                     evaluationStack.clear();
                     try {
                         String result = eval(i, j);
@@ -102,12 +109,14 @@ public class Ex2Sheet implements Sheet {
         }
     }
 
+    // Get the cell at the given coordinates
     @Override
     public Cell get(int x, int y) {
         if (!isIn(x, y)) return null;
         return cells[x][y];
     }
 
+    // Get the cell using a cell reference (e.g., "A1")
     @Override
     public Cell get(String entry) {
         int x = CellEntry.getColumn(entry);
@@ -115,10 +124,12 @@ public class Ex2Sheet implements Sheet {
         return get(x, y);
     }
 
+    // Check if a string is a valid cell reference (e.g., "A1")
     private boolean isCellReference(String data) {
         return data != null && data.matches("[A-Za-z]+[0-9][0-9]*");
     }
 
+    // Evaluate all cells in the spreadsheet
     @Override
     public void eval() throws Exception {
         for (int x = 0; x < width(); x++) {
@@ -128,13 +139,14 @@ public class Ex2Sheet implements Sheet {
         }
     }
 
+    // Calculate the dependency depth of each cell
     @Override
     public int[][] depth() {
         int w = width();
         int h = height();
         int[][] ans = new int[w][h];
 
-        // אתחול כל העומקים ל- -1 (מציין שעדיין לא חושב)
+        // Initialize all depths to -1 (indicating not yet computed)
         for (int x = 0; x < w; x++) {
             for (int y = 0; y < h; y++) {
                 ans[x][y] = -1;
@@ -146,6 +158,7 @@ public class Ex2Sheet implements Sheet {
         int max = w * h;
         boolean flagC;
 
+        // Compute depths iteratively
         while (count < max) {
             flagC = false;
 
@@ -166,14 +179,17 @@ public class Ex2Sheet implements Sheet {
         return ans;
     }
 
+    // Check if a cell can be computed based on its dependencies
     private boolean canBeComputedNow(int x, int y, int[][] ans) {
         Cell cell = get(x, y);
         if (cell == null) return false;
 
+        // Text and number cells can always be computed
         if (cell.getType() == Ex2Utils.TEXT || cell.getType() == Ex2Utils.NUMBER) {
             return true;
         }
 
+        // Formula and cell reference cells depend on other cells
         if (cell.getType() == Ex2Utils.FORM || isCellReference(cell.getData())) {
             List<Cell> dependencies = extractDependencies(cell.getData());
             for (Cell dep : dependencies) {
@@ -189,6 +205,7 @@ public class Ex2Sheet implements Sheet {
         return true;
     }
 
+    // Extract dependencies from a formula or cell reference
     private List<Cell> extractDependencies(String data) {
         List<Cell> dependencies = new ArrayList<>();
         String[] tokens = data.split("[+\\-*/()]");
@@ -201,8 +218,10 @@ public class Ex2Sheet implements Sheet {
         return dependencies;
     }
 
+    // Set to track cells being evaluated (to detect circular references)
     private Set<String> evaluationStack = new HashSet<>();
 
+    // Evaluate a cell reference (e.g., "A1")
     private String evaluateCellReference(String ref) {
         int refX = CellEntry.getColumn(ref);
         int refY = CellEntry.getRow(ref);
@@ -215,6 +234,7 @@ public class Ex2Sheet implements Sheet {
         return eval(refX, refY);
     }
 
+    // Save the spreadsheet to a file
     @Override
     public void save(String fileName) throws IOException {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
@@ -264,6 +284,7 @@ public class Ex2Sheet implements Sheet {
         System.out.println("Sheet successfully saved to " + fileName);
     }
 
+    // Load the spreadsheet from a file
     public void load(String fileName) throws Exception {
         try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
             String line;
@@ -304,6 +325,7 @@ public class Ex2Sheet implements Sheet {
         eval();
     }
 
+    // Get the value of a cell at the given coordinates
     @Override
     public String value(int x, int y) {
         Cell cell = get(x, y);
@@ -321,10 +343,12 @@ public class Ex2Sheet implements Sheet {
         return data;
     }
 
+    // Evaluate the formula in a cell at the given coordinates
     @Override
     public String eval(int x, int y) {
         String cellRef = (char)('A' + x) + String.valueOf(y);
 
+        // Check for circular references
         if (!evaluationStack.add(cellRef)) {
             return "ERR_CIRCULAR";
         }
@@ -336,7 +360,7 @@ public class Ex2Sheet implements Sheet {
             String data = cell.getData();
             if (data == null || data.isEmpty()) return "";
 
-            // אם זו נוסחה
+            // If it's a formula, evaluate it
             if (data.startsWith("=")) {
                 try {
                     Double result = SCell.computeForm(data);
@@ -349,7 +373,7 @@ public class Ex2Sheet implements Sheet {
                 }
             }
 
-            // אם זה מספר
+            // If it's a number, return the raw data
             if (cell.getType() == Ex2Utils.NUMBER) {
                 return data;
             }
@@ -359,6 +383,8 @@ public class Ex2Sheet implements Sheet {
             evaluationStack.remove(cellRef);
         }
     }
+
+    // Evaluate a formula string
     private String evaluateFormula(String formula) {
         formula = formula.toUpperCase().trim();
 
@@ -398,6 +424,7 @@ public class Ex2Sheet implements Sheet {
         }
     }
 
+    // Replace cell references in a formula with their values
     private String replaceCellReferences(String formula) {
         StringBuilder result = new StringBuilder();
         StringBuilder token = new StringBuilder();
