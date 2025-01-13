@@ -6,7 +6,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-
 public class Ex2Sheet implements Sheet {
     private SCell[][] cells;
 
@@ -21,62 +20,94 @@ public class Ex2Sheet implements Sheet {
             }
         }
     }
-
     @Override
     public boolean isIn(int x, int y) {
         return x >= 0 && x < width() && y >= 0 && y < height();
     }
-
     @Override
-    public int width() {
-        return cells.length;
-    }
-
+    public int width() {return cells.length;}
     @Override
     public int height() {
         return cells[0].length;
     }
-    public void set(int x, int y, String c) {
-        if (!isIn(x, y)) {
-            throw new IllegalArgumentException("Invalid cell coordinates: (" + x + ", " + y + ")");
-        }
-        cells[x][y] = new SCell(c);
-        // Try to evaluate immediately
-        try {
-            String evaluated = eval(x, y);
-            if (!evaluated.equals("ERR_FORM")) {
-                cells[x][y].setData(evaluated);
+  @Override
+  public void set(int x, int y, String c) {
+      if (!isIn(x, y)) {
+          throw new IllegalArgumentException("Invalid cell coordinates: (" + x + ", " + y + ")");
+      }
+
+      // Store the original formula/value
+      String oldValue = cells[x][y].getData();
+      cells[x][y] = new SCell(c);
+
+      // If the value actually changed, we need to re-evaluate all cells
+      if (oldValue == null || !oldValue.equals(c)) {
+          // First evaluate this cell if it's a formula
+          if (c != null && c.startsWith("=")) {
+              try {
+                  eval(x, y);
+              } catch (Exception e) {
+                  // Handle evaluation error
+              }
+          }
+
+          // Then re-evaluate all other cells that might depend on this one
+          for (int i = 0; i < width(); i++) {
+              for (int j = 0; j < height(); j++) {
+                  // Skip the current cell
+                  if (i == x && j == y) continue;
+
+                  SCell cell = cells[i][j];
+                  if (cell != null && cell.getData() != null && cell.getData().startsWith("=")) {
+                      String cellData = cell.getData();
+                      // If this cell references our changed cell
+                      String changedCellRef = String.format("%c%d", (char)('A' + x), y);
+                      if (cellData.toUpperCase().contains(changedCellRef)) {
+                          try {
+                              // Clear evaluation stack before each evaluation
+                              evaluationStack.clear();
+                              // Re-evaluate the dependent cell
+                              String result = eval(i, j);
+                          } catch (Exception e) {
+                              // Handle evaluation error
+                          }
+                      }
+                  }
+              }
+          }
+      }
+  }
+    private void reEvaluateDependentCells() {
+        for (int i = 0; i < width(); i++) {
+            for (int j = 0; j < height(); j++) {
+                SCell cell = cells[i][j];
+                if (cell != null && cell.getData() != null && cell.getData().startsWith("=")) {
+                    // Clear evaluation stack before each cell evaluation
+                    evaluationStack.clear();
+                    try {
+                        String result = eval(i, j);
+                        // Don't update the cell's data - keep the formula
+                    } catch (Exception e) {
+                        // Handle evaluation error
+                    }
+                }
             }
-        } catch (Exception e) {
-            // Keep original formula if evaluation fails
         }
     }
-
     @Override
     public Cell get(int x, int y) {
         if (!isIn(x, y)) return null;
         return cells[x][y];
     }
-
     @Override
     public Cell get(String entry) {
         int x = CellEntry.getColumn(entry);
         int y = CellEntry.getRow(entry);
         return get(x, y);
     }
-
-    @Override
-    public String value(int x, int y) {
-        Cell cell = get(x, y);
-        return cell != null ? cell.getData() : "";
-    }
-
-
-
     private boolean isCellReference(String data) {
         return data != null && data.matches("[A-Za-z]+[0-9][0-9]*");
     }
-
     @Override
     public void eval() throws Exception {
         for (int x = 0; x < width(); x++) {
@@ -85,7 +116,6 @@ public class Ex2Sheet implements Sheet {
             }
         }
     }
-
     @Override
     public int[][] depth() {
         int w = width();
@@ -123,7 +153,6 @@ public class Ex2Sheet implements Sheet {
 
         return ans;
     }
-
     private boolean canBeComputedNow(int x, int y, int[][] ans) {
         Cell cell = get(x, y);
         if (cell == null) return false;
@@ -146,7 +175,6 @@ public class Ex2Sheet implements Sheet {
 
         return true;
     }
-
     private List<Cell> extractDependencies(String data) {
         List<Cell> dependencies = new ArrayList<>();
         String[] tokens = data.split("[+\\-*/()]");
@@ -159,61 +187,7 @@ public class Ex2Sheet implements Sheet {
         return dependencies;
     }
     private Set<String> evaluationStack = new HashSet<>();
-    @Override
-    public String eval(int x, int y)  {
-        // Create cell reference string (e.g., "B1")
-        String cellRef = (char)('A' + x) + String.valueOf(y);
-
-        // Check for circular reference
-        if (!evaluationStack.add(cellRef)) {
-            return "ERR_CIRCULAR";  // Circular reference detected
-        }
-
-        try {
-            Cell cell = get(x, y);
-            if (cell == null) return "";
-
-            String data = cell.getData();
-            int type = cell.getType();
-
-            if (type == Ex2Utils.NUMBER) {
-                return data;
-            } else if (type == Ex2Utils.TEXT) {
-                return data;
-            } else if (type == Ex2Utils.FORM) {
-                if (data.startsWith("=")) {
-                    return evaluateFormula(data.substring(1));
-                }
-            }
-            return "ERR_FORM";
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        } finally {
-            // Always remove the cell from evaluation stack when done
-            evaluationStack.remove(cellRef);
-        }
-    }
-
-    private String evaluateFormula(String formula) throws Exception {
-        formula = formula.toUpperCase().trim();
-
-        // Check if it's a simple cell reference (e.g., "B1")
-        if (formula.matches("[A-Z]+[0-9]+")) {
-            return evaluateCellReference(formula);
-        }
-
-        // Handle complex formulas with cell references (e.g., "B1+C1")
-        try {
-            // Replace all cell references with their values
-            String evaluatedFormula = replaceCellReferences(formula);
-            Double result = SCell.computeForm("=" + evaluatedFormula);
-            return result != null ? result.toString() : "ERR_FORM";
-        } catch (Exception e) {
-            return "ERR_FORM";
-        }
-    }
-
-    private String evaluateCellReference(String ref) throws Exception {
+    private String evaluateCellReference(String ref) {
         int refX = CellEntry.getColumn(ref);
         int refY = CellEntry.getRow(ref);
 
@@ -221,66 +195,9 @@ public class Ex2Sheet implements Sheet {
             return "ERR_REF";
         }
 
+        // Evaluate the referenced cell
         return eval(refX, refY);
     }
-
-    private String replaceCellReferences(String formula) throws Exception {
-        StringBuilder result = new StringBuilder();
-        StringBuilder currentToken = new StringBuilder();
-
-        for (int i = 0; i < formula.length(); i++) {
-            char c = formula.charAt(i);
-
-            if (Character.isLetterOrDigit(c)) {
-                currentToken.append(c);
-            } else {
-                // Process the accumulated token
-                if (currentToken.length() > 0) {
-                    String token = currentToken.toString();
-                    if (token.matches("[A-Z]+[0-9]+")) {
-                        // It's a cell reference, evaluate it
-                        String value = evaluateCellReference(token);
-                        result.append(value);
-                    } else {
-                        // It's probably a number or other token
-                        result.append(token);
-                    }
-                    currentToken.setLength(0);
-                }
-                result.append(c);  // Add the operator or other character
-            }
-        }
-
-        // Process the last token if exists
-        if (currentToken.length() > 0) {
-            String token = currentToken.toString();
-            if (token.matches("[A-Z]+[0-9]+")) {
-                String value = evaluateCellReference(token);
-                result.append(value);
-            } else {
-                result.append(token);
-            }
-        }
-
-        return result.toString();
-    }
-
-    /*  @Override
-      public void save(String fileName) throws IOException {
-          try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
-              writer.write(width() + "," + height());
-              writer.newLine();
-
-              for (int x = 0; x < width(); x++) {
-                  for (int y = 0; y < height(); y++) {
-                      Cell cell = get(x, y);
-                      if (cell != null) {
-                          writer.write(x + "," + y + "," + cell.getData());
-                          writer.newLine();
-                      }
-                  }
-              }
-          }*/
     @Override
     public void save(String fileName) throws IOException {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
@@ -329,8 +246,7 @@ public class Ex2Sheet implements Sheet {
         }
         System.out.println("Sheet successfully saved to " + fileName);
     }
-
-   /* public void load(String fileName) throws Exception {
+    public void load(String fileName) throws Exception {
         try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
             String line;
             int rowIndex = 0;
@@ -369,26 +285,155 @@ public class Ex2Sheet implements Sheet {
         // Recalculate values after loading
         eval();
     }
-*/
-
     @Override
-    public void load(String fileName) throws IOException {
-        try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
-            String[] dimensions = reader.readLine().split(",");
-            int width = Integer.parseInt(dimensions[0]);
-            int height = Integer.parseInt(dimensions[1]);
-            cells = new SCell[width][height];
+    public String value(int x, int y) {
+        Cell cell = get(x, y);
+        if (cell == null) return "";
 
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",");
-                int x = Integer.parseInt(parts[0]);
-                int y = Integer.parseInt(parts[1]);
-                String data = parts[2];
-                set(x, y, data);
+        String data = cell.getData();
+        if (data == null || data.isEmpty()) return "";
+
+        // If it's a formula, return the evaluated result
+        if (cell.getType() == Ex2Utils.FORM) {
+            return eval(x, y);
+        }
+
+        // Otherwise return the raw data
+        return data;
+    }
+    @Override
+    public String eval(int x, int y) {
+        String cellRef = (char)('A' + x) + String.valueOf(y);
+
+        if (!evaluationStack.add(cellRef)) {
+            return "ERR_CIRCULAR";
+        }
+
+        try {
+            Cell cell = get(x, y);
+            if (cell == null) return "";
+
+            String data = cell.getData();
+            if (data == null || data.isEmpty()) return "";
+
+            // If it's a formula, evaluate it
+            if (data.startsWith("=")) {
+                return evaluateFormula(data.substring(1));
             }
+
+            // For non-formulas, do type-specific conversion
+            if (cell.getType() == Ex2Utils.NUMBER) {
+                try {
+                    return String.valueOf(Double.parseDouble(data));
+                } catch (NumberFormatException e) {
+                    return data;
+                }
+            }
+
+            return data;
+
+        } finally {
+            evaluationStack.remove(cellRef);
         }
     }
+    private String evaluateFormula(String formula) {
+        formula = formula.toUpperCase().trim();
+
+        // Check if it's a direct cell reference
+        if (formula.matches("[A-Z]+[0-9]+")) {
+            int refX = CellEntry.getColumn(formula);
+            int refY = CellEntry.getRow(formula);
+
+            if (!isIn(refX, refY)) {
+                return "ERR_REF";
+            }
+
+            // Get the referenced cell's type and value
+            Cell referencedCell = get(refX, refY);
+            if (referencedCell == null) return "ERR_REF";
+
+            int refType = referencedCell.getType();
+            // Can only reference numbers or formulas
+            if (refType == Ex2Utils.TEXT) {
+                return "ERR_FORM";
+            }
+
+            return value(refX, refY);
+        }
+
+        // Handle complex formulas
+        try {
+            String evaluated = replaceCellReferences(formula);
+            if (evaluated.equals("ERR_REF") || evaluated.equals("ERR_CIRCULAR") || evaluated.equals("ERR_FORM")) {
+                return evaluated;
+            }
+
+            Double result = SCell.computeForm("=" + evaluated);
+            return result != null ? String.valueOf(result) : "ERR_FORM";
+        } catch (Exception e) {
+            return "ERR_FORM";
+        }
+    }
+
+    private String replaceCellReferences(String formula) {
+        StringBuilder result = new StringBuilder();
+        StringBuilder currentToken = new StringBuilder();
+
+        for (int i = 0; i < formula.length(); i++) {
+            char c = formula.charAt(i);
+
+            if (Character.isLetterOrDigit(c)) {
+                currentToken.append(c);
+            } else {
+                if (currentToken.length() > 0) {
+                    String token = currentToken.toString();
+                    if (token.matches("[A-Z]+[0-9]+")) {
+                        // Check if we're referencing a text cell
+                        int refX = CellEntry.getColumn(token);
+                        int refY = CellEntry.getRow(token);
+                        Cell referencedCell = get(refX, refY);
+
+                        if (referencedCell != null && referencedCell.getType() == Ex2Utils.TEXT) {
+                            return "ERR_FORM";  // Cannot reference text cells
+                        }
+
+                        String value = evaluateCellReference(token);
+                        if (value.equals("ERR_REF") || value.equals("ERR_CIRCULAR") || value.equals("ERR_FORM")) {
+                            return value;
+                        }
+                        result.append(value);
+                    } else {
+                        result.append(token);
+                    }
+                    currentToken.setLength(0);
+                }
+                result.append(c);
+            }
+        }
+
+        // Handle the last token
+        if (currentToken.length() > 0) {
+            String token = currentToken.toString();
+            if (token.matches("[A-Z]+[0-9]+")) {
+                // Check if we're referencing a text cell
+                int refX = CellEntry.getColumn(token);
+                int refY = CellEntry.getRow(token);
+                Cell referencedCell = get(refX, refY);
+
+                if (referencedCell != null && referencedCell.getType() == Ex2Utils.TEXT) {
+                    return "ERR_FORM";  // Cannot reference text cells
+                }
+
+                String value = evaluateCellReference(token);
+                if (value.equals("ERR_REF") || value.equals("ERR_CIRCULAR") || value.equals("ERR_FORM")) {
+                    return value;
+                }
+                result.append(value);
+            } else {
+                result.append(token);
+            }
+        }
+
+        return result.toString();
+    }
 }
-
-

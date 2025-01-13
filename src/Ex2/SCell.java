@@ -11,6 +11,7 @@ public class SCell implements Cell {
     public SCell(String data) {
         this.data = data != null ? data : "";
         this.type = getType();
+
     }
 
     public SCell() {
@@ -21,7 +22,6 @@ public class SCell implements Cell {
     public String getData() {
         return data;
     }
-
     @Override
     public void setData(String s) {
         this.data = s;
@@ -51,34 +51,22 @@ public class SCell implements Cell {
 
         return Ex2Utils.TEXT;
     }
-  /*  @Override
-    public int getType() {
-        if (isNumber(data)) return Ex2Utils.NUMBER;
-        if (isText(data)) return Ex2Utils.TEXT;
-        if (isnumform(data)) return Ex2Utils.FORM;
-        return -1; // Unknown type
-    }
-*/
     @Override
     public void setType(int t) {
         this.type = t;
     }
-
     @Override
     public int getOrder() {
         return order;
     }
-
     @Override
     public void setOrder(int t) {
         this.order = t;
     }
-
     @Override
     public String toString() {
         return "SCell{data='" + data + "', type=" + type + "}";
     }
-
     public static boolean isNumber(String cellValue) {
         if (cellValue == null || cellValue.isEmpty()) return false;
         try {
@@ -88,12 +76,10 @@ public class SCell implements Cell {
             return false;
         }
     }
-
     public boolean isText(String cellValue) {
         if (cellValue == null || cellValue.isEmpty()) return false;
         return !isNumber(cellValue) && !isnumform(cellValue) && !isCellform(cellValue);
     }
-
   /*  public static boolean isnumform(String cellValue) {
         if (cellValue == null || cellValue.isEmpty() || cellValue.charAt(0) != '=') return false;
         String formula = cellValue.substring(1);
@@ -132,7 +118,6 @@ public class SCell implements Cell {
         // Check for basic format: number operator number
         return expression.matches("\\d+[+\\-*/]\\d+");
     }
-
     /**
      * Extracts the operator from a mathematical expression
      * @param expression The mathematical expression
@@ -147,7 +132,6 @@ public class SCell implements Cell {
         }
         throw new Exception("No valid operator found");
     }
-
     /**
      * Performs the mathematical operation
      * @param num1 First number
@@ -167,12 +151,6 @@ public class SCell implements Cell {
             default: throw new Exception("Invalid operator: " + operator);
         }
     }
-
-   /* private static boolean isValidExpression(String expression) {
-        // Add logic to validate complex expressions if needed
-        return true;
-    }
-*/
     public static boolean isCellform(String s) {
         if (s == null || s.isEmpty() || s.charAt(0) != '=') return false;
         String cellRef = s.substring(1);
@@ -183,25 +161,64 @@ public class SCell implements Cell {
             throw new Exception("Formula cannot be empty");
         }
 
-        cellValue = cellValue.replaceAll(" ", ""); // Remove whitespace
-
-        if (cellValue.charAt(0) != '=') {
+        if (!cellValue.startsWith("=")) {
             throw new Exception("Formula must start with =");
         }
 
-        String formula = cellValue.substring(1);
+        // Remove '=' and all whitespace
+        String formula = cellValue.substring(1).replaceAll("\\s+", "");
 
-        // Handle expressions like "5+3" or "B1+C1" (after cell references are replaced)
-        if (formula.matches("\\-?\\d+(\\.\\d+)?([+\\-*/]\\-?\\d+(\\.\\d+)?)*")) {
-            return evaluateExpression(formula);
+        try {
+            // Split by operators, keeping the operators
+            String[] parts = formula.split("(?<=[-+*/])|(?=[-+*/])");
+
+            if (parts.length == 1) {
+                // If it's just a single number
+                return Double.parseDouble(parts[0]);
+            }
+
+            // Process multiplication and division first
+            StringBuilder newFormula = new StringBuilder();
+            for (int i = 0; i < parts.length; i++) {
+                if (i + 2 < parts.length && (parts[i+1].equals("*") || parts[i+1].equals("/"))) {
+                    double left = Double.parseDouble(parts[i]);
+                    double right = Double.parseDouble(parts[i+2]);
+                    double result;
+
+                    if (parts[i+1].equals("*")) {
+                        result = left * right;
+                    } else {
+                        if (right == 0) throw new Exception("Division by zero");
+                        result = left / right;
+                    }
+
+                    newFormula.append(result);
+                    i += 2;
+                } else {
+                    newFormula.append(parts[i]);
+                }
+            }
+
+            // Now process addition and subtraction
+            parts = newFormula.toString().split("(?<=[-+])|(?=[-+])");
+            double result = Double.parseDouble(parts[0]);
+
+            for (int i = 1; i < parts.length; i += 2) {
+                double num = Double.parseDouble(parts[i+1]);
+                if (parts[i].equals("+")) {
+                    result += num;
+                } else if (parts[i].equals("-")) {
+                    result -= num;
+                }
+            }
+
+            return result;
+
+        } catch (NumberFormatException e) {
+            throw new Exception("Invalid number in formula");
+        } catch (Exception e) {
+            throw new Exception("Invalid formula: " + cellValue);
         }
-
-        // If it's just a single number
-        if (isNumber(formula)) {
-            return Double.parseDouble(formula);
-        }
-
-        throw new Exception("Invalid formula: " + cellValue);
     }
 
     private static Double evaluateExpression(String expression) throws Exception {
@@ -237,26 +254,11 @@ public class SCell implements Cell {
 
         return result;
     }
-
-
     private static double evaluateCellReference(String ref) throws Exception {
         // כאן ניתן להוסיף לוגיקה לחישוב הפניות לתאים
         throw new Exception("חישוב הפניות לתאים לא ממומש.");
     }
-   /* public static Double computeForm(String cellValue) throws Exception {
-        if (cellValue == null || cellValue.isEmpty())
-            throw new Exception("the formula incorrect");
-        cellValue = cellValue.replaceAll(" ", "");
-        double sum = -1;
-        if (isNumber(cellValue))
-            return Double.parseDouble(cellValue);
-        if (isnumform(cellValue))
-            return sum = evaluateExpression(cellValue);
-        //if()
-        // return computeForm();
-        return (double) -1;
-
-    }
+/*
 
     public static int indOflast(String str) {
 
@@ -314,7 +316,6 @@ public class SCell implements Cell {
         }
         return str;
     }
-
     private static double applyOperator(double a, double b, char operator) throws Exception {
         return switch (operator) {
             case '+' -> a + b;
