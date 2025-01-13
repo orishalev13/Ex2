@@ -20,63 +20,70 @@ public class Ex2Sheet implements Sheet {
             }
         }
     }
+
     @Override
     public boolean isIn(int x, int y) {
         return x >= 0 && x < width() && y >= 0 && y < height();
     }
+
     @Override
-    public int width() {return cells.length;}
+    public int width() {
+        return cells.length;
+    }
+
     @Override
     public int height() {
         return cells[0].length;
     }
-  @Override
-  public void set(int x, int y, String c) {
-      if (!isIn(x, y)) {
-          throw new IllegalArgumentException("Invalid cell coordinates: (" + x + ", " + y + ")");
-      }
 
-      // Store the original formula/value
-      String oldValue = cells[x][y].getData();
-      cells[x][y] = new SCell(c);
+    @Override
+    public void set(int x, int y, String c) {
+        if (!isIn(x, y)) {
+            throw new IllegalArgumentException("Invalid cell coordinates: (" + x + ", " + y + ")");
+        }
 
-      // If the value actually changed, we need to re-evaluate all cells
-      if (oldValue == null || !oldValue.equals(c)) {
-          // First evaluate this cell if it's a formula
-          if (c != null && c.startsWith("=")) {
-              try {
-                  eval(x, y);
-              } catch (Exception e) {
-                  // Handle evaluation error
-              }
-          }
+        // Store the original formula/value
+        String oldValue = cells[x][y].getData();
+        cells[x][y] = new SCell(c);
 
-          // Then re-evaluate all other cells that might depend on this one
-          for (int i = 0; i < width(); i++) {
-              for (int j = 0; j < height(); j++) {
-                  // Skip the current cell
-                  if (i == x && j == y) continue;
+        // If the value actually changed, we need to re-evaluate all cells
+        if (oldValue == null || !oldValue.equals(c)) {
+            // First evaluate this cell if it's a formula
+            if (c != null && c.startsWith("=")) {
+                try {
+                    eval(x, y);
+                } catch (Exception e) {
+                    // Handle evaluation error
+                }
+            }
 
-                  SCell cell = cells[i][j];
-                  if (cell != null && cell.getData() != null && cell.getData().startsWith("=")) {
-                      String cellData = cell.getData();
-                      // If this cell references our changed cell
-                      String changedCellRef = String.format("%c%d", (char)('A' + x), y);
-                      if (cellData.toUpperCase().contains(changedCellRef)) {
-                          try {
-                              // Clear evaluation stack before each evaluation
-                              evaluationStack.clear();
-                              // Re-evaluate the dependent cell
-                              String result = eval(i, j);
-                          } catch (Exception e) {
-                              // Handle evaluation error
-                          }
-                      }
-                  }
-              }
-          }
-      }
-  }
+            // Then re-evaluate all other cells that might depend on this one
+            for (int i = 0; i < width(); i++) {
+                for (int j = 0; j < height(); j++) {
+                    // Skip the current cell
+                    if (i == x && j == y) continue;
+
+                    SCell cell = cells[i][j];
+                    if (cell != null && cell.getData() != null && cell.getData().startsWith("=")) {
+                        String cellData = cell.getData();
+                        // If this cell references our changed cell
+                        String changedCellRef = String.format("%c%d", (char) ('A' + x), y);
+                        if (cellData.toUpperCase().contains(changedCellRef)) {
+                            try {
+                                // Clear evaluation stack before each evaluation
+                                evaluationStack.clear();
+                                // Re-evaluate the dependent cell
+                                String result = eval(i, j);
+                            } catch (Exception e) {
+                                // Handle evaluation error
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private void reEvaluateDependentCells() {
         for (int i = 0; i < width(); i++) {
             for (int j = 0; j < height(); j++) {
@@ -94,20 +101,24 @@ public class Ex2Sheet implements Sheet {
             }
         }
     }
+
     @Override
     public Cell get(int x, int y) {
         if (!isIn(x, y)) return null;
         return cells[x][y];
     }
+
     @Override
     public Cell get(String entry) {
         int x = CellEntry.getColumn(entry);
         int y = CellEntry.getRow(entry);
         return get(x, y);
     }
+
     private boolean isCellReference(String data) {
         return data != null && data.matches("[A-Za-z]+[0-9][0-9]*");
     }
+
     @Override
     public void eval() throws Exception {
         for (int x = 0; x < width(); x++) {
@@ -116,6 +127,7 @@ public class Ex2Sheet implements Sheet {
             }
         }
     }
+
     @Override
     public int[][] depth() {
         int w = width();
@@ -153,6 +165,7 @@ public class Ex2Sheet implements Sheet {
 
         return ans;
     }
+
     private boolean canBeComputedNow(int x, int y, int[][] ans) {
         Cell cell = get(x, y);
         if (cell == null) return false;
@@ -175,6 +188,7 @@ public class Ex2Sheet implements Sheet {
 
         return true;
     }
+
     private List<Cell> extractDependencies(String data) {
         List<Cell> dependencies = new ArrayList<>();
         String[] tokens = data.split("[+\\-*/()]");
@@ -186,7 +200,9 @@ public class Ex2Sheet implements Sheet {
         }
         return dependencies;
     }
+
     private Set<String> evaluationStack = new HashSet<>();
+
     private String evaluateCellReference(String ref) {
         int refX = CellEntry.getColumn(ref);
         int refY = CellEntry.getRow(ref);
@@ -198,6 +214,7 @@ public class Ex2Sheet implements Sheet {
         // Evaluate the referenced cell
         return eval(refX, refY);
     }
+
     @Override
     public void save(String fileName) throws IOException {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
@@ -246,6 +263,7 @@ public class Ex2Sheet implements Sheet {
         }
         System.out.println("Sheet successfully saved to " + fileName);
     }
+
     public void load(String fileName) throws Exception {
         try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
             String line;
@@ -285,6 +303,7 @@ public class Ex2Sheet implements Sheet {
         // Recalculate values after loading
         eval();
     }
+
     @Override
     public String value(int x, int y) {
         Cell cell = get(x, y);
@@ -301,6 +320,7 @@ public class Ex2Sheet implements Sheet {
         // Otherwise return the raw data
         return data;
     }
+
     @Override
     public String eval(int x, int y) {
         String cellRef = (char)('A' + x) + String.valueOf(y);
@@ -316,22 +336,25 @@ public class Ex2Sheet implements Sheet {
             String data = cell.getData();
             if (data == null || data.isEmpty()) return "";
 
-            // If it's a formula, evaluate it
+            // אם זו נוסחה
             if (data.startsWith("=")) {
-                return evaluateFormula(data.substring(1));
-            }
-
-            // For non-formulas, do type-specific conversion
-            if (cell.getType() == Ex2Utils.NUMBER) {
                 try {
-                    return String.valueOf(Double.parseDouble(data));
-                } catch (NumberFormatException e) {
-                    return data;
+                    Double result = SCell.computeForm(data);
+                    if (result != null) {
+                        return String.valueOf(result);
+                    }
+                    return "ERR_FORM";
+                } catch (Exception e) {
+                    return "ERR_FORM";
                 }
             }
 
-            return data;
+            // אם זה מספר
+            if (cell.getType() == Ex2Utils.NUMBER) {
+                return data;
+            }
 
+            return data;
         } finally {
             evaluationStack.remove(cellRef);
         }
@@ -339,7 +362,7 @@ public class Ex2Sheet implements Sheet {
     private String evaluateFormula(String formula) {
         formula = formula.toUpperCase().trim();
 
-        // Check if it's a direct cell reference
+        // Check if it's a direct cell reference (e.g., A1)
         if (formula.matches("[A-Z]+[0-9]+")) {
             int refX = CellEntry.getColumn(formula);
             int refY = CellEntry.getRow(formula);
@@ -348,28 +371,28 @@ public class Ex2Sheet implements Sheet {
                 return "ERR_REF";
             }
 
-            // Get the referenced cell's type and value
             Cell referencedCell = get(refX, refY);
             if (referencedCell == null) return "ERR_REF";
 
-            int refType = referencedCell.getType();
-            // Can only reference numbers or formulas
-            if (refType == Ex2Utils.TEXT) {
+            // Can't reference text cells
+            if (referencedCell.getType() == Ex2Utils.TEXT) {
                 return "ERR_FORM";
             }
 
             return value(refX, refY);
         }
 
-        // Handle complex formulas
+        // If it's a numerical formula (e.g., 5+2)
         try {
             String evaluated = replaceCellReferences(formula);
             if (evaluated.equals("ERR_REF") || evaluated.equals("ERR_CIRCULAR") || evaluated.equals("ERR_FORM")) {
                 return evaluated;
             }
 
+            // Try to compute the formula
             Double result = SCell.computeForm("=" + evaluated);
-            return result != null ? String.valueOf(result) : "ERR_FORM";
+            if (result == null) return "ERR_FORM";
+            return String.valueOf(result);
         } catch (Exception e) {
             return "ERR_FORM";
         }
@@ -377,60 +400,71 @@ public class Ex2Sheet implements Sheet {
 
     private String replaceCellReferences(String formula) {
         StringBuilder result = new StringBuilder();
-        StringBuilder currentToken = new StringBuilder();
+        StringBuilder token = new StringBuilder();
+
+        // First, try to identify if this is a simple mathematical expression without cell references
+        if (formula.matches("^[0-9+\\-*/(). ]+$")) {
+            return formula;  // It's a pure mathematical expression, return as is
+        }
 
         for (int i = 0; i < formula.length(); i++) {
             char c = formula.charAt(i);
 
             if (Character.isLetterOrDigit(c)) {
-                currentToken.append(c);
+                token.append(c);
             } else {
-                if (currentToken.length() > 0) {
-                    String token = currentToken.toString();
-                    if (token.matches("[A-Z]+[0-9]+")) {
-                        // Check if we're referencing a text cell
-                        int refX = CellEntry.getColumn(token);
-                        int refY = CellEntry.getRow(token);
-                        Cell referencedCell = get(refX, refY);
+                if (token.length() > 0) {
+                    String str = token.toString();
+                    if (str.matches("[A-Z]+[0-9]+")) {  // It's a cell reference
+                        int refX = CellEntry.getColumn(str);
+                        int refY = CellEntry.getRow(str);
 
-                        if (referencedCell != null && referencedCell.getType() == Ex2Utils.TEXT) {
-                            return "ERR_FORM";  // Cannot reference text cells
+                        if (!isIn(refX, refY)) {
+                            return "ERR_REF";
                         }
 
-                        String value = evaluateCellReference(token);
+                        Cell referencedCell = get(refX, refY);
+                        if (referencedCell == null || referencedCell.getType() == Ex2Utils.TEXT) {
+                            return "ERR_FORM";
+                        }
+
+                        String value = value(refX, refY);
                         if (value.equals("ERR_REF") || value.equals("ERR_CIRCULAR") || value.equals("ERR_FORM")) {
                             return value;
                         }
                         result.append(value);
-                    } else {
-                        result.append(token);
+                    } else {  // It's probably a number
+                        result.append(str);
                     }
-                    currentToken.setLength(0);
+                    token.setLength(0);
                 }
                 result.append(c);
             }
         }
 
         // Handle the last token
-        if (currentToken.length() > 0) {
-            String token = currentToken.toString();
-            if (token.matches("[A-Z]+[0-9]+")) {
-                // Check if we're referencing a text cell
-                int refX = CellEntry.getColumn(token);
-                int refY = CellEntry.getRow(token);
-                Cell referencedCell = get(refX, refY);
+        if (token.length() > 0) {
+            String str = token.toString();
+            if (str.matches("[A-Z]+[0-9]+")) {
+                int refX = CellEntry.getColumn(str);
+                int refY = CellEntry.getRow(str);
 
-                if (referencedCell != null && referencedCell.getType() == Ex2Utils.TEXT) {
-                    return "ERR_FORM";  // Cannot reference text cells
+                if (!isIn(refX, refY)) {
+                    return "ERR_REF";
                 }
 
-                String value = evaluateCellReference(token);
+                Cell referencedCell = get(refX, refY);
+                if (referencedCell == null || referencedCell.getType() == Ex2Utils.TEXT) {
+                    return "ERR_FORM";
+                }
+
+                String value = value(refX, refY);
                 if (value.equals("ERR_REF") || value.equals("ERR_CIRCULAR") || value.equals("ERR_FORM")) {
                     return value;
                 }
                 result.append(value);
             } else {
-                result.append(token);
+                result.append(str);
             }
         }
 

@@ -3,6 +3,8 @@ package Ex2;
 import java.util.ArrayList;
 import java.util.List;
 
+
+
 public class SCell implements Cell {
     private String data;
     private int type;
@@ -80,16 +82,7 @@ public class SCell implements Cell {
         if (cellValue == null || cellValue.isEmpty()) return false;
         return !isNumber(cellValue) && !isnumform(cellValue) && !isCellform(cellValue);
     }
-  /*  public static boolean isnumform(String cellValue) {
-        if (cellValue == null || cellValue.isEmpty() || cellValue.charAt(0) != '=') return false;
-        String formula = cellValue.substring(1);
-        try {
-            Double.parseDouble(formula); // Check if it's a simple number formula
-            return true;
-        } catch (NumberFormatException e) {
-            return isCellform(formula) || isValidExpression(formula);
-        }
-    }*/
+
   public static boolean isnumform(String cellValue) {
       // Basic validation
       if (cellValue == null || cellValue.isEmpty() || !cellValue.startsWith("="))
@@ -156,31 +149,69 @@ public class SCell implements Cell {
         String cellRef = s.substring(1);
         return cellRef.matches("[A-Za-z]+[1-9][0-9]*");
     }
-    public static Double computeForm(String cellValue) throws Exception {
-        if (cellValue == null || cellValue.isEmpty()) {
-            throw new Exception("Formula cannot be empty");
-        }
-
-        if (!cellValue.startsWith("=")) {
-            throw new Exception("Formula must start with =");
-        }
-
-        // Remove '=' and all whitespace
-        String formula = cellValue.substring(1).replaceAll("\\s+", "");
-
+    public static Double computeForm(String cellValue) {
         try {
-            // Split by operators, keeping the operators
-            String[] parts = formula.split("(?<=[-+*/])|(?=[-+*/])");
+            if (cellValue == null || !cellValue.startsWith("=")) {
+                return null;
+            }
+
+            // Remove '=' and whitespace
+            String formula = cellValue.substring(1).replaceAll("\\s+", "");
+
+            return evaluateExpression(formula);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static Double evaluateExpression(String expression) {
+        try {
+            // First handle parentheses recursively
+            while (expression.contains("(")) {
+                int openIndex = expression.lastIndexOf("(");
+                int closeIndex = expression.indexOf(")", openIndex);
+                if (closeIndex == -1) return null;  // Mismatched parentheses
+
+                // Evaluate the expression inside parentheses
+                String subExpr = expression.substring(openIndex + 1, closeIndex);
+                Double subResult = evaluateExpression(subExpr);
+                if (subResult == null) return null;
+
+                // Replace the parentheses expression with its result
+                expression = expression.substring(0, openIndex) +
+                        subResult.toString() +
+                        expression.substring(closeIndex + 1);
+            }
+
+            // Split the expression by operators, handling negative numbers
+            String[] parts = expression.split("(?<=[-+*/])|(?=[-+*/])");
+
+            // Clean up the parts and handle negative numbers
+            List<String> cleanParts = new ArrayList<>();
+            for (int i = 0; i < parts.length; i++) {
+                String part = parts[i].trim();
+                if (part.isEmpty()) continue;
+
+                // Handle negative numbers
+                if (part.equals("-") && (i == 0 || "+-*/".contains(parts[i-1]))) {
+                    if (i + 1 < parts.length) {
+                        cleanParts.add("-" + parts[i+1]);
+                        i++;
+                    }
+                } else {
+                    cleanParts.add(part);
+                }
+            }
+            parts = cleanParts.toArray(new String[0]);
 
             if (parts.length == 1) {
-                // If it's just a single number
                 return Double.parseDouble(parts[0]);
             }
 
-            // Process multiplication and division first
-            StringBuilder newFormula = new StringBuilder();
+            // Handle multiplication and division first
+            List<String> tempParts = new ArrayList<>();
             for (int i = 0; i < parts.length; i++) {
-                if (i + 2 < parts.length && (parts[i+1].equals("*") || parts[i+1].equals("/"))) {
+                if (i+2 < parts.length && (parts[i+1].equals("*") || parts[i+1].equals("/"))) {
                     double left = Double.parseDouble(parts[i]);
                     double right = Double.parseDouble(parts[i+2]);
                     double result;
@@ -188,141 +219,37 @@ public class SCell implements Cell {
                     if (parts[i+1].equals("*")) {
                         result = left * right;
                     } else {
-                        if (right == 0) throw new Exception("Division by zero");
+                        if (right == 0) return null; // Division by zero
                         result = left / right;
                     }
 
-                    newFormula.append(result);
+                    tempParts.add(String.valueOf(result));
                     i += 2;
+                } else if (i+1 < parts.length && (parts[i+1].equals("*") || parts[i+1].equals("/"))) {
+                    // Skip, will be handled in next iteration
                 } else {
-                    newFormula.append(parts[i]);
+                    tempParts.add(parts[i]);
                 }
             }
 
-            // Now process addition and subtraction
-            parts = newFormula.toString().split("(?<=[-+])|(?=[-+])");
-            double result = Double.parseDouble(parts[0]);
-
-            for (int i = 1; i < parts.length; i += 2) {
-                double num = Double.parseDouble(parts[i+1]);
-                if (parts[i].equals("+")) {
-                    result += num;
-                } else if (parts[i].equals("-")) {
-                    result -= num;
+            // Now handle addition and subtraction
+            double result = Double.parseDouble(tempParts.get(0));
+            for (int i = 1; i < tempParts.size() - 1; i += 2) {
+                double nextNum = Double.parseDouble(tempParts.get(i + 1));
+                if (tempParts.get(i).equals("+")) {
+                    result += nextNum;
+                } else if (tempParts.get(i).equals("-")) {
+                    result -= nextNum;
                 }
             }
 
             return result;
 
         } catch (NumberFormatException e) {
-            throw new Exception("Invalid number in formula");
+            return null;
         } catch (Exception e) {
-            throw new Exception("Invalid formula: " + cellValue);
+            return null;
         }
     }
 
-    private static Double evaluateExpression(String expression) throws Exception {
-        // Split the expression into numbers and operators
-        String[] numbers = expression.split("[+\\-*/]");
-        List<Character> operators = new ArrayList<>();
-
-        for (char c : expression.toCharArray()) {
-            if ("+-*/".indexOf(c) >= 0) {
-                operators.add(c);
-            }
-        }
-
-        // Start with the first number
-        double result = Double.parseDouble(numbers[0]);
-
-        // Apply each operator in sequence
-        for (int i = 0; i < operators.size(); i++) {
-            double nextNum = Double.parseDouble(numbers[i + 1]);
-            char op = operators.get(i);
-
-            switch (op) {
-                case '+': result += nextNum; break;
-                case '-': result -= nextNum; break;
-                case '*': result *= nextNum; break;
-                case '/':
-                    if (nextNum == 0) throw new Exception("Division by zero");
-                    result /= nextNum;
-                    break;
-                default: throw new Exception("Invalid operator: " + op);
-            }
-        }
-
-        return result;
-    }
-    private static double evaluateCellReference(String ref) throws Exception {
-        // כאן ניתן להוסיף לוגיקה לחישוב הפניות לתאים
-        throw new Exception("חישוב הפניות לתאים לא ממומש.");
-    }
-/*
-
-    public static int indOflast(String str) {
-
-        int p = 0;
-        for (int s = str.length() - 1; s >= 0; s--) {
-            if (str.charAt(s) == ')')
-                while (str.charAt(s) != '(') {
-                    if (s == 0) return s;
-                    s--;
-                    if (p == 0) {
-                        if ("/*".contains(str.charAt(s) + ""))
-                            p = s;
-                        if ("-+".contains(str.charAt(s) + ""))
-                            return s;
-                    }
-                }
-
-            if ("/*".contains(str.charAt(s) + ""))
-                p = s;
-            if ("-+".contains(str.charAt(s) + ""))
-                return s;
-        }
-        return p;
-    }
-
-    private static boolean isOperator(char c) {
-        return c == '+' || c == '-' || c == '*' || c == '/';
-    }
-
-    public static double evaluateExpression(String expression) throws Exception {
-        if (expression == null || expression.isEmpty())
-            throw new Exception("the formula incorrect");
-        if (expression.charAt(0) == '=')
-            expression = expression.substring(1);
-        if (isNumber(expression))
-            return Double.parseDouble(expression);
-        else {
-            int i = indOflast(expression);
-            if (i == 0)
-                expression = remove(expression);
-            if (isNumber(expression))
-                return Double.parseDouble(expression);
-            char c = expression.charAt(i);
-            return applyOperator(evaluateExpression(expression.substring(0, i)), evaluateExpression(expression.substring(i + 1)), c);
-        }
-
-    }
-*/
-    public static String remove(String str) {
-        for (int i = 0; i < str.length(); i++) {
-            if ("()".contains(str.charAt(i) + "")) {
-                char c = str.charAt(i);
-                str = str.replace(Character.toString(c), "");
-            }
-        }
-        return str;
-    }
-    private static double applyOperator(double a, double b, char operator) throws Exception {
-        return switch (operator) {
-            case '+' -> a + b;
-            case '-' -> a - b;
-            case '*' -> a * b;
-            case '/' -> a / b;
-            default -> throw new Exception("the operatror incorrect");
-        };
-    }
 }
