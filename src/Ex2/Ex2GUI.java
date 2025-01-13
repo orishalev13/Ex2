@@ -22,7 +22,7 @@ public class Ex2GUI {
 	public Ex2GUI() {;}  // an empty (redundant) constructor.
 
 	/** The main function for running Ex2 */
-	public static void main(String[] a) {
+	public static void main(String[] a) throws Exception {
 		table = new Ex2Sheet(Ex2Utils.WIDTH, Ex2Utils.HEIGHT);
 		testSimpleGUI(table);
 	}
@@ -31,14 +31,18 @@ public class Ex2GUI {
 	 * This function runs the main (endlees) loop of the GUI
 	 * @param table the SpreadSheet - note: this class is written as a naive implementation of "singleton" (i.e., all static).
 	 */
-	public static void testSimpleGUI(Sheet table) {
+	public static void testSimpleGUI(Sheet table) throws Exception {
 		// init parameters
 		StdDrawEx2.setCanvasSize(Ex2Utils.WINDOW_WIDTH, Ex2Utils.WINDOW_HEIGHT);
 		StdDrawEx2.setScale(0, Ex2Utils.MAX_X);
 		StdDrawEx2.setPenRadius(Ex2Utils.PEN_RADIUS);
 		StdDrawEx2.enableDoubleBuffering();
-		table.eval();
-		// endless loop (GUI)
+        try {
+            table.eval();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        // endless loop (GUI)
 		while (true) {
 			StdDrawEx2.clear(); // clear the GUI (Ex2 window).
 			drawFrame(); // draws the lines.
@@ -64,8 +68,10 @@ public class Ex2GUI {
 		}
 		catch (IOException e) {
 			e.printStackTrace();
-		}
-	}
+		} catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 	private static Color getColorFromType(int t) {
 		Color ans = Color.GRAY;
 		if(t== Ex2Utils.NUMBER) {ans=Color.BLACK;}
@@ -122,7 +128,7 @@ public class Ex2GUI {
 	 * @param xx the x coordinate of the required cell.
 	 * @param yy the y coordinate of the required cell.
 	 */
-	private static void inputCell(int xx,int yy) {
+	private static void inputCell(int xx,int yy) throws Exception {
 		if(table.isIn(xx,yy)) {
 			Cell cc = table.get(xx,yy);
 			String ww = cord+": "+cc.toString()+" : ";

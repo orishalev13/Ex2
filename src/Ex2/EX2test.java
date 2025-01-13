@@ -2,9 +2,6 @@ package Ex2;
 
 import org.junit.jupiter.api.Test;
 
-import static Ex2.SCell.isForm;
-import static Ex2.SCell.isNumber;
-import static Ex2.SCell.computeForm;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 public class EX2test {
@@ -47,11 +44,11 @@ public class EX2test {
     void testIsForm() {
         dcell1 cell = new dcell1("");
 
-        assertTrue(SCell.isForm("=1+2"));
-        assertTrue(SCell.isForm("=((1+2)*2)"));
-        assertFalse(SCell.isForm("1+2"));
-        assertFalse(SCell.isForm("Hello"));
-        assertFalse(SCell.isForm(""));
+        assertTrue(SCell.isnumform("=1+2"));
+        assertTrue(SCell.isnumform("=((1+2)*2)"));
+        assertFalse(SCell.isnumform("1+2"));
+        assertFalse(SCell.isnumform("Hello"));
+        assertFalse(SCell.isnumform(""));
     }
 
     @Test

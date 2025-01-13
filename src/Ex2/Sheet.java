@@ -124,5 +124,5 @@ public interface Sheet {
      * @param fileName a String representing the full (an absolute or relative path to the loaded file).
      * @throws IOException an exception might be throed if the file can not be loaded.
      */
-    public void load(String fileName) throws IOException;
+    public void load(String fileName) throws Exception;
 }

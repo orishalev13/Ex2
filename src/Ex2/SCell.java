@@ -1,35 +1,21 @@
 package Ex2;
-// Add your documentation below:
 
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class SCell implements Cell {
-
+public class SCell implements Cell {
     private String data;
     private int type;
-   private int order;
+    private int order;
 
-    // Add your code here
     public SCell(String data) {
-
-        this.data = data;
-
-        if(isNumber(data))
-            this.type=1;
-        if (isText(data))
-            this.type=2;
-        if (isForm1(data))
-        this.type = 3;
-        this.order = SCell.getOrder;
-        //this.scell=new ArrayList<>();
+        this.data = data != null ? data : "";
+        this.type = getType();
     }
 
     public SCell() {
         this("");
     }
-
-
 
     @Override
     public String getData() {
@@ -39,13 +25,40 @@ public abstract class SCell implements Cell {
     @Override
     public void setData(String s) {
         this.data = s;
+        this.type = getType(); // Update type when data changes
     }
-
     @Override
     public int getType() {
-        return type;
-    }
+        if (data == null || data.isEmpty()) {
+            return Ex2Utils.TEXT;
+        }
 
+        // Convert to uppercase for consistent checking
+        String upperData = data.toUpperCase();
+
+        if (upperData.startsWith("=")) {
+            // Check if it's a number formula or cell reference
+            String formula = upperData.substring(1);
+            if (formula.matches("[A-Z]+[1-9][0-9]*")) {
+                return Ex2Utils.FORM;  // Cell reference
+            }
+            return Ex2Utils.FORM;  // Other formulas
+        }
+
+        if (isNumber(data)) {
+            return Ex2Utils.NUMBER;
+        }
+
+        return Ex2Utils.TEXT;
+    }
+  /*  @Override
+    public int getType() {
+        if (isNumber(data)) return Ex2Utils.NUMBER;
+        if (isText(data)) return Ex2Utils.TEXT;
+        if (isnumform(data)) return Ex2Utils.FORM;
+        return -1; // Unknown type
+    }
+*/
     @Override
     public void setType(int t) {
         this.type = t;
@@ -53,43 +66,23 @@ public abstract class SCell implements Cell {
 
     @Override
     public int getOrder() {
-        // If the cell is a formula, compute the order based on its dependencies.
-        if (type == Ex2Utils.FORM) {
-            int maxOrder = 0;
-            for (Cell dep : scell) {
-                maxOrder = Math.max(maxOrder, dep.getOrder());
-            }
-            return maxOrder + 1; // 1 + max of all dependent cells
-        }
-        return 0; // If not a formula, no computation needed
+        return order;
     }
+
     @Override
     public void setOrder(int t) {
         this.order = t;
     }
-    // Add a dependency for this cell (used for formulas)
-    public void addDependency(Cell dep) {
-        scell.add(dep);
+
+    @Override
+    public String toString() {
+        return "SCell{data='" + data + "', type=" + type + "}";
     }
 
-    // Clear the dependencies (used for recalculation or resetting)
-    public void clearDependencies() {
-        scell.clear();
-    }
-    public String toString() {
-        return "CellImpl{" +
-                "data='" + data + '\'' +
-               // ", type=" + type +
-                //", order=" + order +
-                '}';
-    }
     public static boolean isNumber(String cellValue) {
-        cellValue = cellValue.replaceAll(" ", "");
-        if (cellValue == null || cellValue.isEmpty()) {
-            return false; // Return false for null or empty strings
-        }
+        if (cellValue == null || cellValue.isEmpty()) return false;
         try {
-            Double.valueOf(cellValue); // Attempt to parse the string as a double
+            Double.parseDouble(cellValue);
             return true;
         } catch (NumberFormatException e) {
             return false;
@@ -97,97 +90,167 @@ public abstract class SCell implements Cell {
     }
 
     public boolean isText(String cellValue) {
-        cellValue = cellValue.replaceAll(" ", "");
-        if (cellValue == null || cellValue.isEmpty()) {
-            return false; // Return false for null or empty strings
-        }
-        if (cellValue.charAt(0) == '=')
-            return false;
-        if (isForm(cellValue))
-            return false;
-        if (isNumber(cellValue))
-            return false;
-        return true;
-
-
+        if (cellValue == null || cellValue.isEmpty()) return false;
+        return !isNumber(cellValue) && !isnumform(cellValue) && !isCellform(cellValue);
     }
 
-    public static boolean isForm(String cellValue) {
-        cellValue = cellValue.replaceAll(" ", "");//remove all the space
-        if (cellValue == null || cellValue.isEmpty()) {
-            return false; // Return false for null or empty strings
+  /*  public static boolean isnumform(String cellValue) {
+        if (cellValue == null || cellValue.isEmpty() || cellValue.charAt(0) != '=') return false;
+        String formula = cellValue.substring(1);
+        try {
+            Double.parseDouble(formula); // Check if it's a simple number formula
+            return true;
+        } catch (NumberFormatException e) {
+            return isCellform(formula) || isValidExpression(formula);
         }
-        if (cellValue.charAt(0) != '=') {
-            return false; //   only '=' at the start
-        }
-        int par = 0;
-        boolean s = false;
-        for (int i = 1; i < cellValue.length(); i++) {
-            if (!Character.isDigit(cellValue.charAt(i)) && !("()+-*/.".contains(cellValue.charAt(i) + "")))// there only char from type numbers or -=\*.()
-                return false;
-            if (cellValue.charAt(i) == '(' && cellValue.charAt(i + 1) == ')')// there no way of  empty ().
-                return false;
-            if (cellValue.charAt(i) == '(') //check that no way of )( or just).
-                par++;
-            if (cellValue.charAt(i) == ')')
-                par--;
-            if (par < 0)
-                return false;
-            if ("+-*/".contains(cellValue.charAt(i) + "")) {// check if there ++,--,//,**
-                if (s)
-                    return false;
-                s = true;
-                if (i == cellValue.length() - 1)//check if the operator is in the end
-                    return false;
-            } else s = false;
-            if ("+-".contains(cellValue.charAt(i) + "")) { // if there -+ check
-                /** if (i < cellValue.length() - 1 && cellValue.charAt(i + 1) == ')')
-                 return false;//check if there -) that not correct
-                 */
-                // Ensure that the operator is not at the edge of the string
-                if (i > 1 && i < cellValue.length() - 1) {
-                    // Valid characters before the operator: digits, closing parentheses, or opening parentheses
-                    if (!Character.isDigit(cellValue.charAt(i - 1)) && cellValue.charAt(i - 1) != ')' && cellValue.charAt(i - 1) != '(') {
-                        return false;
-                    }
-                    // Valid characters after the operator: digits or opening parentheses
-                    if (!Character.isDigit(cellValue.charAt(i + 1)) && cellValue.charAt(i + 1) != '(') {
-                        return false;
-                    }
-                } else {
-                    return false; // An operator at the edge of the string is invalid
-                }
-            }
+    }*/
+  public static boolean isnumform(String cellValue) {
+      // Basic validation
+      if (cellValue == null || cellValue.isEmpty() || !cellValue.startsWith("="))
+          return false;
 
-            if ("/*".contains(cellValue.charAt(i) + "")) {
-                if (i < cellValue.length() - 1 && cellValue.charAt(i + 1) == ')')
-                    return false;//check if there -) that not correct
-                if (i > 0 && (Character.isDigit(cellValue.charAt(i - 1)) || "()".contains(cellValue.charAt(i - 1) + ""))) {
-                    continue;
-                }
-                if (i < cellValue.length() - 1 && (Character.isDigit(cellValue.charAt(i + 1)) || cellValue.charAt(i + 1) == '(')) {
-                    continue;
-                }
-                return false;
-            }
-            if (cellValue.charAt(i) == '.') {// check that the point only befor or after number.
-                if (!Character.isDigit(cellValue.charAt(i - 1)) && !Character.isDigit(cellValue.charAt(i + 1)))
-                    return false;
-            }
-        }
-        if (par != 0)//check that no way of just (.
-            return false;
-        return true;
+      String formula = cellValue.substring(1);
+
+      // Check if it's a simple mathematical expression
+      if (formula.matches("\\d+[+\\-*/]\\d+"))
+          return true;
+
+      // Check if it's a single number
+      try {
+          Double.parseDouble(formula);
+          return true;
+      } catch (NumberFormatException e) {
+          return false;
+      }
+  }
+    /**
+     * Validates if the input string represents a valid mathematical expression
+     * @param expression The string to validate
+     * @return true if the expression is valid, false otherwise
+     */
+    private static boolean isValidExpression(String expression) {
+        // Check for basic format: number operator number
+        return expression.matches("\\d+[+\\-*/]\\d+");
     }
 
+    /**
+     * Extracts the operator from a mathematical expression
+     * @param expression The mathematical expression
+     * @return The operator character
+     * @throws Exception if no valid operator is found
+     */
+    private static char extractOperator(String expression) throws Exception {
+        for (char c : expression.toCharArray()) {
+            if ("+-*/".indexOf(c) != -1) {
+                return c;
+            }
+        }
+        throw new Exception("No valid operator found");
+    }
+
+    /**
+     * Performs the mathematical operation
+     * @param num1 First number
+     * @param num2 Second number
+     * @param operator The operator to apply
+     * @return The result of the operation
+     * @throws Exception if the operation is invalid (e.g., division by zero)
+     */
+    private static double calculateResult(double num1, double num2, char operator) throws Exception {
+        switch (operator) {
+            case '+': return num1 + num2;
+            case '-': return num1 - num2;
+            case '*': return num1 * num2;
+            case '/':
+                if (num2 == 0) throw new Exception("Division by zero");
+                return num1 / num2;
+            default: throw new Exception("Invalid operator: " + operator);
+        }
+    }
+
+   /* private static boolean isValidExpression(String expression) {
+        // Add logic to validate complex expressions if needed
+        return true;
+    }
+*/
+    public static boolean isCellform(String s) {
+        if (s == null || s.isEmpty() || s.charAt(0) != '=') return false;
+        String cellRef = s.substring(1);
+        return cellRef.matches("[A-Za-z]+[1-9][0-9]*");
+    }
     public static Double computeForm(String cellValue) throws Exception {
+        if (cellValue == null || cellValue.isEmpty()) {
+            throw new Exception("Formula cannot be empty");
+        }
+
+        cellValue = cellValue.replaceAll(" ", ""); // Remove whitespace
+
+        if (cellValue.charAt(0) != '=') {
+            throw new Exception("Formula must start with =");
+        }
+
+        String formula = cellValue.substring(1);
+
+        // Handle expressions like "5+3" or "B1+C1" (after cell references are replaced)
+        if (formula.matches("\\-?\\d+(\\.\\d+)?([+\\-*/]\\-?\\d+(\\.\\d+)?)*")) {
+            return evaluateExpression(formula);
+        }
+
+        // If it's just a single number
+        if (isNumber(formula)) {
+            return Double.parseDouble(formula);
+        }
+
+        throw new Exception("Invalid formula: " + cellValue);
+    }
+
+    private static Double evaluateExpression(String expression) throws Exception {
+        // Split the expression into numbers and operators
+        String[] numbers = expression.split("[+\\-*/]");
+        List<Character> operators = new ArrayList<>();
+
+        for (char c : expression.toCharArray()) {
+            if ("+-*/".indexOf(c) >= 0) {
+                operators.add(c);
+            }
+        }
+
+        // Start with the first number
+        double result = Double.parseDouble(numbers[0]);
+
+        // Apply each operator in sequence
+        for (int i = 0; i < operators.size(); i++) {
+            double nextNum = Double.parseDouble(numbers[i + 1]);
+            char op = operators.get(i);
+
+            switch (op) {
+                case '+': result += nextNum; break;
+                case '-': result -= nextNum; break;
+                case '*': result *= nextNum; break;
+                case '/':
+                    if (nextNum == 0) throw new Exception("Division by zero");
+                    result /= nextNum;
+                    break;
+                default: throw new Exception("Invalid operator: " + op);
+            }
+        }
+
+        return result;
+    }
+
+
+    private static double evaluateCellReference(String ref) throws Exception {
+        // כאן ניתן להוסיף לוגיקה לחישוב הפניות לתאים
+        throw new Exception("חישוב הפניות לתאים לא ממומש.");
+    }
+   /* public static Double computeForm(String cellValue) throws Exception {
         if (cellValue == null || cellValue.isEmpty())
             throw new Exception("the formula incorrect");
         cellValue = cellValue.replaceAll(" ", "");
         double sum = -1;
         if (isNumber(cellValue))
             return Double.parseDouble(cellValue);
-        if (isForm(cellValue))
+        if (isnumform(cellValue))
             return sum = evaluateExpression(cellValue);
         //if()
         // return computeForm();
@@ -241,7 +304,7 @@ public abstract class SCell implements Cell {
         }
 
     }
-
+*/
     public static String remove(String str) {
         for (int i = 0; i < str.length(); i++) {
             if ("()".contains(str.charAt(i) + "")) {
@@ -261,36 +324,4 @@ public abstract class SCell implements Cell {
             default -> throw new Exception("the operatror incorrect");
         };
     }
-
-    public static boolean isForm1(String s) {
-        if (s.charAt(0) != '=')
-            return false;
-        if (isForm(s))
-            return true;
-        if (isCellform(s))
-            return true;
-        return false;
-    }
-    public static boolean isCellform(String str) {
-        if (str == null || str.length() < 3) {
-            return false; // The string should at least be "=A1"
-        }
-        if (str.charAt(0) != '=') {
-            return false;
-        }
-            str = str.substring(1);
-            if (!Character.isLetter(str.charAt(0))) // If no letters found, return false
-                return false;
-
-            int i = 1;
-            // Check if the rest contains only digits
-            while (i < str.length() && Character.isDigit(str.charAt(i))) {
-                i++;
-            }
-            if (i > 2)//Check if the digits is no longer 99
-                return false;
-            // If there are extra characters or if the row part is missing, return false
-            return i == str.length();
-        }
-    }
-
+}
